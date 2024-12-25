@@ -1,0 +1,4 @@
+Flask
+gunicorn
+deep-translator
+gtts
