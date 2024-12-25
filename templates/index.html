@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrenchConnect Translator</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 70%;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .text-area-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            width: 100%;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            width: 100%;
+        }
+        textarea {
+            width: 48%;
+            height: 150px;
+            padding: 15px;
+            font-size: 18px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+            resize: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        textarea:focus {
+            border-color: #007BFF;
+        }
+        button {
+            width: 48%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(90deg, #007BFF, #0056b3);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #0056b3, #007BFF);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+        .save-button {
+            background: #28a745;
+        }
+        .save-button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="margin-bottom: 20px;">FrenchConnect Translator</h1>
+        <!-- Text Areas -->
+        <div class="text-area-container">
+            <textarea id="english" placeholder="Type in English"></textarea>
+            <textarea id="french" placeholder="Type in French"></textarea>
+        </div>
+        <!-- Save Translation Button -->
+        <button id="saveButton" class="save-button" style="width: 50%;">Save Translation</button>
+        <!-- Buttons for Audio Actions -->
+        <div class="button-group">
+            <!-- English Audio Actions -->
+            <div style="width: 48%;">
+                <button id="playEnglish">Play English Audio</button>
+                <button id="saveEnglishAudio">Save English Audio</button>
+            </div>
+            <!-- French Audio Actions -->
+            <div style="width: 48%;">
+                <button id="playFrench">Play French Audio</button>
+                <button id="saveFrenchAudio">Save French Audio</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const englishBox = document.getElementById('english');
+        const frenchBox = document.getElementById('french');
+        const saveButton = document.getElementById('saveButton');
+        const playEnglishButton = document.getElementById('playEnglish');
+        const playFrenchButton = document.getElementById('playFrench');
+        const saveEnglishAudioButton = document.getElementById('saveEnglishAudio');
+        const saveFrenchAudioButton = document.getElementById('saveFrenchAudio');
+
+        function translate(text, lang) {
+            fetch('/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text, lang })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (lang === 'en') {
+                    frenchBox.value = data.translated_text;
+                } else if (lang === 'fr') {
+                    englishBox.value = data.translated_text;
+                }
+            });
+        }
+
+        function saveTranslation() {
+            const englishText = englishBox.value;
+            const frenchText = frenchBox.value;
+
+            const blob = new Blob([`English: ${englishText}\nFrench: ${frenchText}`], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'translations.txt';
+            a.click();
+
+            URL.revokeObjectURL(url);
+        }
+
+        function playAudio(text, lang) {
+            fetch('/audio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text, lang })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.audio_path) {
+                    const audio = new Audio(data.audio_path);
+                    audio.play();
+                } else {
+                    alert('Error generating audio: ' + data.error);
+                }
+            });
+        }
+
+        function saveAudio(lang) {
+            const url = `/download/${lang}`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${lang}_audio.mp3`;
+            a.click();
+        }
+
+        englishBox.addEventListener('input', () => {
+            translate(englishBox.value, 'en');
+        });
+
+        frenchBox.addEventListener('input', () => {
+            translate(frenchBox.value, 'fr');
+        });
+
+        saveButton.addEventListener('click', saveTranslation);
+
+        playEnglishButton.addEventListener('click', () => {
+            playAudio(englishBox.value, 'en');
+        });
+
+        playFrenchButton.addEventListener('click', () => {
+            playAudio(frenchBox.value, 'fr');
+        });
+
+        saveEnglishAudioButton.addEventListener('click', () => {
+            saveAudio('en');
+        });
+
+        saveFrenchAudioButton.addEventListener('click', () => {
+            saveAudio('fr');
+        });
+    </script>
+</body>
+</html>
